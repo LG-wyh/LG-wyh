@@ -1,0 +1,738 @@
+/*
+2022年10月14日
+西三村图书管理系统
+作者：wyh
+测试版本：1.0
+ */
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <conio.h>
+#include <time.h>
+#define N 10000//n==10000
+typedef struct book
+{
+	int bookPrice;	//价格
+	char bookName[50];//书名
+	char bookWriter[50];//作者
+	char bookPress[50]; //出版社
+	int bookId;//ISBN码
+	int bookNum;//图书数量
+	int bookState;//图书借阅状态:借出、未借出
+}BK;//构造一个图书结构体
+
+typedef struct bookBorrow
+{
+    char bBookName[50];//书名
+	int bBookId;//ISNB码
+	char bBorrowName[50];//借书人姓名
+	int bBookNum;//图书借出数量
+    char bTime[20];
+    char backTime[20];
+}BB;
+typedef struct num
+{
+    int books;
+    int bBooks;
+}BN;
+BB bB[N];//结构体的数组形态
+BK bk[N];
+BN bn;
+int books=0;
+int bBooks=0;
+char len[20];
+void clean();
+void ui();
+void backs();
+void change();
+void view();
+void seach();
+void sum();
+void borrowerView();
+void borrowChange();
+void bookBack();
+void bookWrite();
+void bookRead();
+void bookNumWrite();
+void bookNumRead();
+void bRead();
+void bWrite();
+void getTime();
+
+void luru()//录入信息
+{
+    bookNumRead();
+    if (!(books=bn.books))
+    {
+        books=0;
+    }else
+    {
+        bookRead();
+    }
+
+	int bs;//我们需要储存的书本信息
+	int i, k = 1;
+	system("CLS");//清屏
+	printf("请输入需要输入几个图书信息：");
+	scanf("%d", &bs);
+    if  (bs==0)
+    {
+        printf("不能录入0个图书信息：");
+    }
+    else
+    {
+        for (i = books;i < books + bs;i++, k++)
+        {
+            printf("请输入第%d个书本的书名：",k);
+            scanf_s("%s", bk[i].bookName,50);
+            printf("请输入第%d个书本的价格：", k);
+            scanf_s("%d", &bk[i].bookPrice);
+            printf("请输入第%d个书本的出版社:", k);
+            scanf_s("%s", &bk[i].bookPress,50);
+            printf("请输入第%d个书本的作者:", k);
+            scanf_s("%s", &bk[i].bookWriter,50);
+            printf("请输入第%d个书本的ISBN码:", k);
+            scanf_s("%d", &bk[i].bookId);
+            printf("请输入第%d个书本的数量:", k);
+            scanf_s("%d", &bk[i].bookNum);
+            bk[i].bookState=0;
+        }
+    }
+    books= books + bs;
+	bn.books = books;//将输入的人数返回，相当于记录了图书种类
+    bookWrite();
+    bookNumWrite();
+	backs();//初始化，方便使用，当然是返回到对应的函数，不过这个确实是对用户体验很有好处
+}
+
+
+
+void main()
+{
+
+	ui();
+}
+
+
+void ui()
+{
+	int i = 0;
+	int a;
+	system("CLS");//清屏，clearbackground
+	printf("           图书管理系统\n");
+	printf("                作者：wyh\n");
+	printf("-------------------MENU-----------------\n");
+	printf("         1.录入图书信息\n");
+	printf("         2.删除库中信息\n");
+	printf("         3.修改图书信息\n");
+	printf("         4.浏览图书信息\n");
+	printf("         5.模糊查找\n");
+	printf("           5.1按书名查找\n");
+	printf("           5.2按作者查找\n");
+	printf("           5.3按出版社查找\n");
+	printf("           5.4按出ISNB码查找\n");
+	printf("         6.当前图书借阅情况查看\n");
+	printf("         7.图书借出登记\n");
+	printf("         8.图书归还登记\n");
+	printf("         0.退出系统\n");
+	printf(" 请输入序号:______\b\b\b");
+
+
+
+	while (i == 0)//输入，服务的是工具不是人，还是尽量减少输入语句在方法里好
+	{
+		scanf_s("%d", &a);
+		switch (a)
+		{
+		case 1:
+			i++;luru();break;
+		case 2:
+			i++;clean();break;
+		case 3:
+			i++;change();break;
+		case 4:
+			i++;view();break;
+		case 5:
+			i++;seach();break;
+		case 6:
+			i++;borrowerView();break;
+		case 7:
+			i++;borrowChange();break;
+		case 8:
+			i++;bookBack();break;
+		case 0:
+			exit(0);break;
+		default:
+			printf("请重新输入\n");
+		}
+	}
+}
+
+void backs()
+{
+	char a[20];
+	printf("\n");
+	printf("还需要操作么？如果需要操作请输入：yes，否则请输入：no\n");
+	scanf_s("%s", &a,20);//简单的检测用户输入单词
+	if (strcmp(a, "yes") == 0)
+	{
+		ui();
+	}
+	else if (strcmp(a, "no") == 0)
+		exit(0);
+	else
+	{
+		printf("请输入正确的字符，谢谢！\n");
+		backs();
+	}
+}
+
+
+/// <summary>
+/// 清理数据
+/// </summary>
+void clean()//删除数据
+{
+    bookNumRead();
+    books=bn.books;
+    bookRead();
+	char cleanof[10];
+	system("CLS");
+	printf("删除全部书本信息请输入\"all\"，删除指定单个信息请输入\"one\"\n");
+	scanf_s("%s", cleanof,10);
+	if (strcmp(cleanof, "all") == 0)//假设为all，比较字符串，在strcmp下，相同返回0，否返回非零
+	{
+		books = 0;
+		printf("删除成功\n\n");
+	}
+	else if (strcmp(cleanof, "one") == 0)
+	{
+		struct book* p = NULL;//null初始化值
+		int choice ;
+		int i, j, k = 0;
+		printf("请输入删除的书ISBN码:");
+		scanf_s("%d", &choice);
+		for (i = 0;i < books;i++)
+		{
+			if (choice==bk[i].bookId)//一个一个查下去，检查是否相同，相同则操作
+			{
+				k = 1;j = i;break;
+			}
+		}
+
+		if (k==1)//只是为了防止k没有被更新新的值
+		{
+			if (books == 1)
+			{
+				p = &bk[1];
+				free(p);//释放p的内存,因为vs过于严谨，只能放在这里了，单独删除会出现问题
+				books = 0;//变0
+			}
+			else
+			{
+				for (i = j;i < books;i++)
+				{
+					bk[i] = bk[i + 1];//用前一个覆盖后一个，参考数据结构
+				}
+				books = books - 1;
+			}
+			printf("删除成功\n\n");
+		}
+		else//检测错误代码
+		{
+			printf("输入数据错误！\n");
+			clean();
+		}
+	}
+	else//检测错误代码
+	{
+		printf("输入数据错误！\n");
+		clean();
+	}
+	bn.books=books;
+	bookWrite();
+	bookNumWrite();
+	backs();
+}
+
+void change()//修改数据
+{
+    bookNumRead();
+    books=bn.books;
+    bookRead();
+	system("CLS");
+	int a;
+	int i, j;
+	printf("请输入需要修改图书的ISBN码：\n");
+	scanf_s("%d", &a);
+	for (i = 0;i < books;i++)
+	{
+		if (a==bk[i].bookId)//一个一个查下去，检查是否相同，相同则操作
+		{
+			j = i;
+			break;
+		}
+		else
+		{
+			printf("没有查询对应图书：\n");
+			backs();
+		}
+	}
+	printf("请选择要进行的步骤：\n");
+	printf("1.作者修改\n");
+	printf("2.出版商修改\n");
+	printf("3.价格修改\n");
+	printf("4.ISBN修改\n");
+	printf("5.数量修改\n");
+	printf("6.书名修改\n");
+	printf("7.借阅状态修改\n");
+    printf("请输入对应数字：");
+	scanf_s("%d", &i);
+	printf("\n请输修改后内容：");
+	switch (i)
+	{
+	case 1:scanf_s("%s", bk[j].bookWriter, 50);break;
+	case 2:scanf_s("%s", bk[j].bookPress, 50);break;
+	case 3:scanf_s("%d", &bk[j].bookPrice);break;
+	case 4:scanf_s("%d", bk[j].bookId);break;
+	case 5:scanf_s("%d", &bk[j].bookNum);break;
+	case 6:scanf_s("%s", bk[j].bookName, 50);break;
+	case 7:scanf_s("%s", &bk[j].bookState);break;
+	default:
+	printf("输入有误！\n");
+	}
+	bookWrite();
+	backs();
+}
+
+void view()//查看系统所有书籍信息
+{
+    bookNumRead();
+    books=bn.books;
+    bookRead();
+	int i;
+	system("CLS");
+	if (books == 0)
+	{
+		printf("系统里面没有任何书籍的信息！(输入任意数字继续)\n");	//简单的防止报错问题，利用人数是否为0来做扳机
+		scanf_s("%d", &i);
+	}
+	else
+	{
+		printf("序号----书名----作者----出版社----ISNB码------图书数量----借阅状态（0可借1不可借）\t\n");
+		for (i = 0;i < books;i++)//简单的for循环打印
+		{
+			printf("%d------%s-------%s---------%s-----------%d-------%d----%d\t\n",i+1, bk[i].bookName,bk[i].bookWriter,bk[i].bookPress,bk[i].bookId,bk[i].bookNum,bk[i].bookState);
+		}
+	}
+	backs();//返回该函数，优化用户体验
+}
+
+void borrowerView()//查看图书借阅情况
+{
+    bookNumRead();
+    books=bn.books;
+    bBooks=bn.bBooks;
+    bRead();
+	system("CLS");
+	int i;
+	if (bBooks == 0)
+	{
+		printf("当前没有书籍借出！(输入任意数字继续)\n");	//简单的防止报错问题
+		scanf_s("%d", &i);
+	}
+	else
+	{
+		printf("序号----借阅人姓名----书名----ISNB码------图书借出数量------借出时间------归还时间\n");
+		for (int i = 0;i < bBooks;i++)//简单的for循环打印
+		{
+            printf("%d----%s------%s------%d-------%d------%s------%s\n",i+1,bB[i].bBorrowName, bB[i].bBookName,bB[i].bBookId,bB[i].bBookNum,bB[i].bTime,bB[i].backTime);
+
+		}
+	}
+	backs();//返回该函数，优化用户体验
+}
+
+void seach()//根据不同的方式查找书籍信息函数
+{
+    bookNumRead();
+    books=bn.books;
+    bookRead();
+	char  xx[50];
+	int yy;
+	int l,i, j, tag=0,k = 0;
+	system("CLS");
+
+	if (books == 0)
+	{
+		printf("系统里面没有任何书籍的信息！(输入任意数字继续)\n");
+		scanf_s("%d", &i);
+		backs();
+	}
+	printf("请选择查找方式：\n");
+	printf("1.书名\n");
+	printf("2.作者\n");
+	printf("3.出版社\n");
+	printf("4.ISBN\n");
+	printf("请输入对应编号：");
+	scanf_s("%d", &l);
+	if (l == 1)
+	{
+		printf("请输入需要查找书籍的书名或包含的词：");
+		scanf_s("%s", xx,50);
+		printf("您所查找的书的信息为：\n");
+		printf("序号----书名----作者----出版社----ISBN码----数量----借阅状态（0可借，1不可借）\t\n");
+		for (i = 0;i < books;i++)//靠书名模糊检索
+		{
+			for(int y= 0;y < strlen(xx);y+=2)
+			{
+				for(int v = 0;v < strlen(bk[i].bookName);v+=2)
+				{
+            		if(xx[y] == bk[i].bookName[v] && xx[y+1] == bk[i].bookName[v+1])
+               	 	tag++;
+				}
+			}
+			if(tag == strlen(xx) / 2)
+            {
+                k++;
+                j = i;//提取j
+				printf("%d------%s-------%s---------%s-------%d----%d----%d\t\n", k, bk[j].bookName,bk[j].bookWriter,bk[j].bookPress,bk[j].bookId,bk[j].bookNum,bk[j].bookState);
+            }
+			tag=0;
+		}
+		if (k==0)
+		{
+			printf("未查到相关书籍信息！\n");
+		}
+	}
+	else if (l == 2)//为什么不用swicth
+	{
+		printf("请输入需要查找书籍的作者或包含的词：");
+		scanf_s("%s", xx,50);
+		printf("您所查找的书的信息为：\n");
+		printf("序号----书名----作者----出版社----ISBN码----数量----借阅状态（0可借，1不可借）\t\n");
+		for (i = 0;i < books;i++)//靠作者模糊检索
+		{
+			for(int y= 0;y < strlen(xx);y+=2)
+			{
+				for(int v = 0;v < strlen(bk[i].bookWriter);v+=2)
+				{
+            		if(xx[y] == bk[i].bookWriter[v] && xx[y+1] == bk[i].bookWriter[v+1])
+               	 	tag++;
+				}
+			}
+			if(tag == strlen(xx) / 2)
+            {
+                k++;
+                j = i;//提取j
+				printf("%d------%s-------%s---------%s-------%d----%d----%d\t\n", k, bk[j].bookName,bk[j].bookWriter,bk[j].bookPress,bk[j].bookId,bk[j].bookNum,bk[j].bookState);
+            }
+			tag=0;
+		}
+		if (k==0)
+		{
+			printf("未查到相关书籍信息！\n");
+		}
+	}
+	else if (l == 3)//逻辑相同不多说
+	{
+		printf("请输入需要查找书籍的出版社或包含的词：");
+		scanf_s("%s", xx,50);
+		printf("您所查找的书的信息为：\n");
+		printf("序号----书名----作者----出版社----ISBN码----数量----借阅状态（0可借，1不可借）\t\n");
+		for (i = 0;i < books;i++)//靠作者模糊检索
+		{
+			for(int y= 0;y < strlen(xx);y+=2)
+			{
+				for(int v = 0;v < strlen(bk[i].bookPress);v+=2)
+				{
+            		if(xx[y] == bk[i].bookPress[v] && xx[y+1] == bk[i].bookPress[v+1])
+               	 	tag++;
+				}
+			}
+			if(tag == strlen(xx) / 2)
+            {
+                k++;
+                j = i;//提取j
+				printf("%d------%s-------%s---------%s-------%d----%d----%d\t\n", k, bk[j].bookName,bk[j].bookWriter,bk[j].bookPress,bk[j].bookId,bk[j].bookNum,bk[j].bookState);
+            }
+			tag=0;
+		}
+		if (k==0)
+		{
+			printf("未查到相关书籍信息！\n");
+		}
+	}
+	else if (l == 4)//逻辑相同不多说
+	{
+		printf("请输入需要查找书籍的ISBN码：");
+		scanf_s("%d", &yy);
+		printf("您所查找的书的信息为：\n");
+		printf("序号----书名----作者----出版社----ISBN码----数量----借阅状态（0可借，1不可借）\t\n");
+		for (i = 0;i < books;i++)//靠作者模糊检索
+		{
+
+            if(yy == bk[i].bookId)
+			{
+				j = i;//提取j
+				k++;
+				printf("%d------%s-------%s---------%s-------%d----%d----%d\t\n", k, bk[j].bookName,bk[j].bookWriter,bk[j].bookPress,bk[j].bookId,bk[j].bookNum,bk[j].bookState);
+			}
+		}
+		if (k==0)
+		{
+			printf("未查到相关书籍信息！\n");
+		}
+	}
+	backs();
+}
+
+void borrowChange()//借书登记
+{
+    bookNumRead();
+    books=bn.books;
+    bBooks=bn.bBooks;
+    bookRead();
+	system("CLS");
+	int bId,j,i,k=0;
+	char noBack[20]="未还";
+	if (books == 0)
+	{
+		printf("当前没有书籍可借！(输入任意数字继续)\n");	//简单的防止报错问题
+		scanf_s("%d", &i);
+		backs();
+	}
+	printf("请输入借出图书的ISBN码：\n");
+	scanf_s("%d", &bId);
+	for (int i = 0;i < books;i++)
+	{
+		if (bId == bk[i].bookId)//一个一个查下去，检查是否相同，相同则操作
+		{
+			j = i;
+			k++;
+			break;
+		}
+	}
+	if(k==0)
+    {
+        printf("没有查询对应图书：\n");
+        backs();
+    }
+	bB[bBooks].bBookId=bId;
+	strcpy(bB[bBooks].bBookName,bk[j].bookName);
+	printf("请输入借阅人姓名：\n");
+	scanf_s("%s", &bB[bBooks].bBorrowName,50);
+	printf("请输借阅数量：\n");
+	scanf_s("%d", &bB[bBooks].bBookNum);
+	if(bB[bBooks].bBookNum==bk[j].bookNum)
+    {
+        bk[j].bookState=1;
+    }
+    getTime();
+    strcpy(bB[bBooks].bTime,len);
+    strcpy(bB[bBooks].backTime,noBack);
+	bBooks=bBooks+1;
+	bWrite();
+	bookWrite();
+    bn.bBooks=bBooks;
+	bookNumWrite();
+	backs();
+}
+
+void bookBack()//还书登记
+{
+    bookNumRead();
+    books=bn.books;
+    bBooks=bn.bBooks;
+    bookRead();
+    bRead();
+	system("CLS");
+	int bId,backNum,i;
+	int j,m=0;
+	char backName[50];
+	char noBack[20]="未还";
+	if (bBooks == 0)
+	{
+		printf("当前还没有书籍借出，不需要归还！(输入任意数字继续)\n");	//简单的防止报错问题
+		scanf_s("%d", &i);
+		backs();
+	}
+	printf("请输入归还图书的ISBN码：\n");
+	scanf_s("%d", &bId);
+	printf("请输入借书人的姓名：\n");
+	scanf_s("%s", &backName);
+	for (int i = 0;i < bBooks;i++)
+	{
+		if (bId==bB[i].bBookId&&strcmp(backName,bB[i].bBorrowName)==0&&strcmp(noBack,bB[i].backTime)==0)//一个一个查下去，检查是否相同，相同则操作
+		{
+			j = i;
+			m++;
+			break;
+		}
+	}
+	if(m==0)
+    {
+        printf("没有查询对应图书或借书人：\n");
+        backs();
+    }
+
+
+lab1:	printf("请输入归还数量：\n");
+	scanf_s("%d", &backNum);
+	if(bB[j].bBookNum==backNum)
+	{
+	    for(int k=0;k<books;k++)
+        {
+            if(bId==bk[k].bookId)
+            {
+                 bk[k].bookState=0;
+            }
+        }
+        getTime();
+		strcpy(bB[j].backTime,len);
+        bWrite();
+        bookWrite();
+	}
+	else if(backNum<bB[j].bBookNum&&backNum>0)
+	{
+		printf("没有完全归还！\n");
+        getTime();
+        strcpy(bB[j].backTime,len);
+        bB[bBooks].bBookId=bB[j].bBookId;
+        strcpy(bB[bBooks].bBookName,bB[j].bBookName);
+        bB[bBooks].bBookNum=bB[j].bBookNum-backNum;
+        strcpy(bB[bBooks].bBorrowName,bB[j].bBorrowName);
+        getTime();
+		strcpy(bB[bBooks].bTime,len);
+		strcpy(bB[bBooks].backTime,noBack);
+        bBooks=bBooks+1;
+        bWrite();
+        bn.bBooks=bBooks;
+        bookNumWrite();
+	}
+	else
+	{
+		printf("输入的归还数量不正确，请重新输入\n");
+		goto lab1;
+	}
+	backs();
+}
+
+void bookWrite()//将图书信息写入文件
+{
+    FILE* fp;
+    fp=fopen("bookData.txt","w+");
+    if(!fp)
+    {
+        printf("error!\n");
+        exit(-1);
+    }
+    for(int i=0;i<books;i++)
+    {
+        fprintf(fp,"%d  %s  %s  %s  %d  %d  %d\n",bk[i].bookPrice,bk[i].bookName,bk[i].bookWriter,bk[i].bookPress,bk[i].bookId,bk[i].bookNum,bk[i].bookState);
+    }
+    fclose(fp);
+   // return 0;
+}
+
+void bWrite()//将借出图书信息写入文件
+{
+    FILE* fp;
+    fp=fopen("borrowBookData.txt","w+");
+    if(!fp)
+    {
+        printf("error!\n");
+        exit(-1);
+    }
+    for(int i=0;i<bBooks;i++)
+    {
+        fprintf(fp,"%s\t%s\t%d\t%d\t%s\t%s\n",bB[i].bBorrowName,bB[i].bBookName,bB[i].bBookId,bB[i].bBookNum,bB[i].bTime,bB[i].backTime);
+    }
+    fclose(fp);
+    //return 0;
+}
+
+void bookRead()//读取文件中的图书信息
+{
+    FILE* fp;
+    fp=fopen("bookData.txt","r");
+    if(!fp)
+    {
+        printf("error!\n");
+        exit(-1);
+    }
+    for(int i=0;i<books;i++)
+    {
+        fscanf(fp,"%d   %s  %s  %s  %d  %d  %d\n",&bk[i].bookPrice,&bk[i].bookName,&bk[i].bookWriter,&bk[i].bookPress,&bk[i].bookId,&bk[i].bookNum,&bk[i].bookState);
+    }
+    fclose(fp);
+    //return 0;
+}
+
+void bRead()//读取借出图书信息
+{
+    FILE* fp;
+    fp=fopen("borrowBookData.txt","r");
+    if(!fp)
+    {
+        printf("error!\n");
+        exit(-1);
+    }
+    for(int i=0;i<bBooks;i++)
+    {
+        fscanf(fp,"%s\t%s\t%d\t%d\t%s\t%s\n",&bB[i].bBorrowName,&bB[i].bBookName,&bB[i].bBookId,&bB[i].bBookNum,&bB[i].bTime,&bB[i].backTime);
+    }
+    fclose(fp);
+    //return 0;
+}
+
+void bookNumWrite()//将图书种类借书次数记录进文件
+{
+    FILE* fp;
+    fp=fopen("bookNumData.txt","w+");
+    if(!fp)
+    {
+        printf("error!\n");
+        exit(-1);
+    }
+    fprintf(fp,"%d  %d\n",bn.books,bn.bBooks);
+    fclose(fp);
+    //return 0;
+}
+
+void bookNumRead()//读取图书种类数
+{
+    FILE* fp;
+    fp=fopen("bookNumData.txt","r");
+    if(!fp)
+    {
+        printf("error!\n");
+        exit(-1);
+    }
+    fscanf(fp,"%d  %d\n",&bn.books,&bn.bBooks);
+    fclose(fp);
+    //return 0;
+}
+
+void getTime()//获取当前时间并转化为字符串保存
+{
+    int i=0;
+    time_t timep;
+    time(&timep);
+    struct tm *p;
+    p=gmtime(&timep);
+    snprintf(len,20,"%d-%d-%d-%d:%d:%d",1900+p->tm_year,1+p->tm_mon,p->tm_mday,8+p->tm_hour,p->tm_min,p->tm_sec);
+    while('\0'!=len[i])
+    {
+        if(' '==len[i])
+        {
+            for (int j=i;j<strlen(len);j++)
+            {
+                len[j]=len[j+1];
+            }
+            continue;
+        }
+        i++;
+    }
+    //return 0;
+}
